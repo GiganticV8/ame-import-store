@@ -472,10 +472,22 @@
         };
 
         // --- Configurações e Variáveis Globais (Fornecidas pelo ambiente) ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
+// --- Configurações do Firebase (AGORA CONFIGURADAS MANUALMENTE) ---
+// Suas chaves de configuração do projeto "ame-import":
+const REAL_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBc23pCVw7A6Kbw0C6egJ2WN7aMabSPZv8",
+    authDomain: "ame-import.firebaseapp.com",
+    projectId: "ame-import",
+    storageBucket: "ame-import.firebasestorage.app",
+    messagingSenderId: "977194836818",
+    appId: "1:977194836818:web:82ba955a91533236e0d08b",
+    measurementId: "G-BBMYX2E1B8"
+};
+
+const appId = REAL_FIREBASE_CONFIG.projectId;
+const firebaseConfig = REAL_FIREBASE_CONFIG;
+const initialAuthToken = null; // Não necessário para hospedagem normal
+// -----------------------------------------------------------------
         // Configurações para Biquíni (usadas apenas nos filtros)
         const BIQUINI_COLORS = ['Preto', 'Azul Marinho', 'Vermelho', 'Verde Militar', 'Amarelo Limão', 'Estampa Tropical', 'Rosa Neon'];
         const BIQUINI_SIZES = ['P', 'M', 'G', 'GG'];
