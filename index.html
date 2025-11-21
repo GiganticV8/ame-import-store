@@ -4,1217 +4,1094 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ame Import - E-commerce</title>
-    <!-- Carrega o Tailwind CSS para estilização moderna -->
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Define a fonte Inter e o tema de cores personalizado -->
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Firebase - VERSÃO COMPAT.JS -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
+        * {
             font-family: 'Inter', sans-serif;
-            background-color: #F8FAFC; /* Fundo suave, quase branco */
         }
-        /* Cores Temáticas */
-        .text-gold { color: #DFA40A; } /* Amarelo Dourado para destaque */
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background-color: #f9fafb; /* Light gray background */
+        }
+        
+        .gold { color: #DFA40A; } 
         .bg-gold { background-color: #DFA40A; } 
         .border-gold { border-color: #DFA40A; }
-        .shadow-gold { box-shadow: 0 4px 6px -1px rgba(223, 164, 10, 0.2), 0 2px 4px -2px rgba(223, 164, 10, 0.1); } /* Sombra Dourada */
-
-        .text-dark-blue { color: #1E3A8A; } /* Azul Escuro */
-        .bg-dark-blue { background-color: #1E3A8A; }
-
-        /* Estilos para o botão de filtro ativo e abas de navegação */
-        .nav-link.active, .filter-button.active {
-            background-color: #DFA40A;
-            color: white; 
-            border-color: #DFA40A;
-            box-shadow: 0 2px 5px rgba(223, 164, 10, 0.5);
+        
+        .blue-dark { color: #1E3A8A; } 
+        .bg-blue-dark { background-color: #1E3A8A; }
+        
+        .hover-gold:hover { background-color: #DFA40A; }
+        
+        .sidebar-filter {
+            position: fixed;
+            left: 0;
+            top: 64px;
+            bottom: 0;
+            width: 280px;
+            overflow-y: auto;
+            background: white;
+            border-right: 1px solid #e5e7eb;
+            padding: 1.5rem;
+            z-index: 10;
+            transition: left 0.3s ease-in-out;
         }
-        /* Esconde o menu social quando fechado */
-        .social-menu-toggle {
-            transition: transform 0.3s ease-in-out;
-        }
-        /* Esconde a barra de rolagem mas permite o scroll */
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .sidebar-filter.open { left: 0 !important; }
 
-        /* Estilização da Sidebar de Filtros */
-        #filter-sidebar {
-            transition: transform 0.3s ease-in-out;
+        @media (min-width: 768px) {
+            .sidebar-filter {
+                position: sticky;
+                top: 64px;
+                left: 0;
+            }
+            .main-content {
+                margin-left: 280px;
+                padding-top: 2rem;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            .sidebar-filter {
+                left: -280px;
+                top: 0;
+                width: 80%;
+                z-index: 60;
+                padding-top: 64px;
+            }
+            .main-content {
+                margin-left: 0;
+                padding-top: 5rem;
+            }
+        }
+
+        .cart-sidebar {
+            position: fixed;
+            right: -400px;
+            top: 0;
+            bottom: 0;
+            width: 400px;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            transition: right 0.3s;
+            z-index: 50;
+            overflow-y: auto;
+        }
+        
+        .cart-sidebar.open { right: 0; }
+        
+        @media (max-width: 640px) {
+            .cart-sidebar {
+                width: 100%;
+                right: -100%;
+            }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.open { display: flex; }
+        
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 1;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #DFA40A;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
-<body class="min-h-screen">
+<body class="bg-gray-50">
 
-    <!-- Overlay de Carregamento (Loading) -->
-    <div id="loading-overlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center z-[101]">
-        <div class="flex flex-col items-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-4 border-gold border-t-transparent"></div>
-            <p class="mt-4 text-gold font-semibold">Carregando Ame Import...</p>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p class="text-xl font-semibold blue-dark">Carregando Ame Import...</p>
         </div>
     </div>
 
-    <!-- Cabeçalho Principal e Navegação -->
-    <header class="bg-white shadow-lg sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto p-4 flex justify-between items-center">
-            <!-- Nome da Loja -->
-            <h1 class="text-3xl font-extrabold text-gold">Ame Import</h1>
+    <!-- Header -->
+    <header class="bg-blue-dark text-white sticky top-0 left-0 right-0 z-40 shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <button id="menuToggle" class="md:hidden p-2 hover:bg-white/10 rounded">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                <h1 class="text-2xl font-bold gold cursor-pointer" onclick="navigateTo('home')">Ame Import</h1>
+            </div>
             
-            <!-- Links de Navegação (Desktop) -->
-            <nav class="hidden md:flex space-x-4">
-                <button onclick="setCategory('Home')" id="nav-Home" class="nav-link px-3 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition active">Home</button>
-                <button onclick="setCategory('Perfume Feminino')" id="nav-Perfume Feminino" class="nav-link px-3 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition">P. Fem.</button>
-                <button onclick="setCategory('Perfume Masculino')" id="nav-Perfume Masculino" class="nav-link px-3 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition">P. Masc.</button>
-                <button onclick="setCategory('Kit')" id="nav-Kit" class="nav-link px-3 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition">Kits</button>
-                <button onclick="setCategory('Creme')" id="nav-Creme" class="nav-link px-3 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition">Cremes</button>
-                <button onclick="setCategory('Sabonete')" id="nav-Sabonete" class="nav-link px-3 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition">Sabonetes</button>
-                <button onclick="setCategory('Biquíni')" id="nav-Biquíni" class="nav-link px-3 py-2 rounded-lg text-gray-700 font-semibold hover:bg-gray-100 transition">Biquínis</button>
+            <nav class="hidden md:flex gap-6">
+                <a onclick="navigateTo('home')" class="cursor-pointer hover:text-yellow-400 transition">Home</a>
+                <a onclick="navigateTo('perfumes-masculino')" class="cursor-pointer hover:text-yellow-400 transition">Perfumes Masculino</a>
+                <a onclick="navigateTo('perfumes-feminino')" class="cursor-pointer hover:text-yellow-400 transition">Perfumes Feminino</a>
+                <a onclick="navigateTo('kits')" class="cursor-pointer hover:text-yellow-400 transition">Kits</a>
+                <a onclick="navigateTo('cremes')" class="cursor-pointer hover:text-yellow-400 transition">Cremes</a>
+                <a onclick="navigateTo('sabonetes')" class="cursor-pointer hover:text-yellow-400 transition">Sabonetes</a>
+                <a onclick="navigateTo('biquinis')" class="cursor-pointer hover:text-yellow-400 transition">Biquínis</a>
             </nav>
-
-            <!-- Ícones de Ação -->
-            <div class="flex items-center space-x-3 sm:space-x-4">
-                 <!-- Botão de Filtro (Lupa) para Mobile -->
-                <button onclick="toggleFilterSidebar()" class="md:hidden p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-600" title="Abrir Filtros">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            
+            <div class="flex items-center gap-4">
+                <button onclick="toggleCart()" class="relative p-2 hover:bg-white/10 rounded transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
+                    <span id="cartCount" class="absolute -top-1 -right-1 bg-gold text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
                 </button>
-
-                <!-- Botão do Perfil/Cadastro -->
-                <button onclick="openProfileModal()" class="relative p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition text-gray-600" title="Meu Perfil">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                </button>
-
-                <!-- Botão do Carrinho (Fundo Dourado) -->
-                <button onclick="document.getElementById('cart-sidebar').classList.toggle('hidden')" class="relative p-2 rounded-full bg-gold hover:bg-dark-blue transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <!-- Contagem do carrinho (Fundo Azul Escuro) -->
-                    <span id="cart-item-count" class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-dark-blue rounded-full">0</span>
+                <button onclick="openAdminModal()" class="bg-gold text-blue-dark px-4 py-2 rounded font-semibold hover:bg-yellow-500 transition">
+                    Admin
                 </button>
             </div>
-        </div>
-        <!-- Links de Navegação (Mobile - Abaixo do header) -->
-        <nav class="md:hidden flex justify-start overflow-x-auto whitespace-nowrap p-2 bg-gray-50 border-t border-gray-200 no-scrollbar">
-            <button onclick="setCategory('Home')" id="nav-mobile-Home" class="nav-link px-3 py-1 mr-2 rounded-full text-sm text-gray-700 hover:bg-gray-200 transition active">Home</button>
-            <button onclick="setCategory('Perfume Feminino')" id="nav-mobile-Perfume Feminino" class="nav-link px-3 py-1 mr-2 rounded-full text-sm text-gray-700 hover:bg-gray-200 transition">P. Fem.</button>
-            <button onclick="setCategory('Perfume Masculino')" id="nav-mobile-Perfume Masculino" class="nav-link px-3 py-1 mr-2 rounded-full text-sm text-gray-700 hover:bg-gray-200 transition">P. Masc.</button>
-            <button onclick="setCategory('Kit')" id="nav-mobile-Kit" class="nav-link px-3 py-1 mr-2 rounded-full text-sm text-gray-700 hover:bg-gray-200 transition">Kits</button>
-            <button onclick="setCategory('Creme')" id="nav-mobile-Creme" class="nav-link px-3 py-1 mr-2 rounded-full text-sm text-gray-700 hover:bg-gray-200 transition">Cremes</button>
-            <button onclick="setCategory('Sabonete')" id="nav-mobile-Sabonete" class="nav-link px-3 py-1 mr-2 rounded-full text-sm text-gray-700 hover:bg-gray-200 transition">Sabonetes</button>
-            <button onclick="setCategory('Biquíni')" id="nav-mobile-Biquíni" class="nav-link px-3 py-1 mr-2 rounded-full text-sm text-gray-700 hover:bg-gray-200 transition">Biquínis</button>
-        </nav>
-        <!-- ID do Usuário para rastreio em mobile -->
-        <div class="md:hidden text-center p-2 bg-gray-100 border-t border-gray-200">
-            <span id="user-id-display-mobile" class="text-xs text-gray-500 truncate" title="Seu ID de Usuário"></span>
         </div>
     </header>
 
-    <!-- Sidebar de Filtros (Pequena e Vertical) -->
-    <aside id="filter-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-2xl p-6 transform -translate-x-full md:translate-x-0 transition-transform duration-300 md:static md:w-auto md:shadow-none md:p-0 md:bg-transparent">
-        <div class="md:sticky md:top-20 md:w-64 bg-white p-6 rounded-xl shadow-md space-y-6">
+    <!-- Sidebar Filter -->
+    <aside id="sidebarFilter" class="sidebar-filter md:left-0">
+        <h3 class="text-lg font-bold blue-dark mb-4">Filtros</h3>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2">Buscar</label>
+            <input type="text" id="filterText" placeholder="Nome do produto..." class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2">Preço Mínimo</label>
+            <input type="number" id="filterMinPrice" placeholder="R$ 0" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-semibold mb-2">Preço Máximo</label>
+            <input type="number" id="filterMaxPrice" placeholder="R$ 1000" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+        </div>
+        
+        <!-- Filtros Condicionais para Biquíni -->
+        <div id="bikiniFilters" style="display: none;">
+            <div class="mb-4">
+                <label class="block text-sm font-semibold mb-2">Cor</label>
+                <select id="filterColor" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+                    <option value="">Todas</option>
+                    <option value="Preto">Preto</option>
+                    <option value="Branco">Branco</option>
+                    <option value="Vermelho">Vermelho</option>
+                    <option value="Azul">Azul</option>
+                    <option value="Rosa">Rosa</option>
+                    <option value="Verde">Verde</option>
+                </select>
+            </div>
             
-            <div class="flex justify-between items-center md:hidden mb-4">
-                <h3 class="text-xl font-bold text-gray-800 border-b-2 border-gold pb-2">Filtros</h3>
-                <button onclick="toggleFilterSidebar()" class="text-gray-500 hover:text-gray-800 transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            <div class="mb-4">
+                <label class="block text-sm font-semibold mb-2">Tamanho</label>
+                <select id="filterSize" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+                    <option value="">Todos</option>
+                    <option value="P">P</option>
+                    <option value="M">M</option>
+                    <option value="G">G</option>
+                    <option value="GG">GG</option>
+                </select>
+            </div>
+        </div>
+        
+        <button onclick="applyFilters()" class="w-full bg-blue-dark text-white py-2 rounded font-semibold hover:bg-blue-900 transition">
+            Aplicar Filtros
+        </button>
+        
+        <button onclick="clearFilters()" class="w-full mt-2 border border-gray-300 py-2 rounded font-semibold hover:bg-gray-100 transition">
+            Limpar Filtros
+        </button>
+    </aside>
+
+    <!-- Main Content -->
+    <main id="mainContent" class="main-content min-h-screen">
+        <!-- Content will be rendered here -->
+    </main>
+
+    <!-- Cart Sidebar -->
+    <div id="cartSidebar" class="cart-sidebar">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold blue-dark">Carrinho</h2>
+                <button onclick="toggleCart()" class="p-2 hover:bg-gray-100 rounded">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
                 </button>
             </div>
             
-            <!-- Busca por Nome -->
-            <div class="space-y-2">
-                <label for="search-input" class="block text-sm font-medium text-gray-700">Buscar por Nome</label>
-                <input type="text" id="search-input" oninput="applyFilters()" placeholder="Ex: Jasmim, Matte, Azul" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-gold focus:border-gold">
+            <div id="cartItems" class="space-y-4 mb-6">
+                <!-- Cart items will be rendered here -->
             </div>
             
-            <!-- Filtro por Preço -->
-            <div class="space-y-3">
-                <h4 class="text-lg font-semibold text-gray-800">Preço (R$)</h4>
-                <div class="flex space-x-2">
-                    <input type="number" id="min-price" oninput="applyFilters()" placeholder="Mínimo" class="w-1/2 p-2 border border-gray-300 rounded-lg text-sm focus:ring-gold focus:border-gold" min="0" value="0">
-                    <input type="number" id="max-price" oninput="applyFilters()" placeholder="Máximo" class="w-1/2 p-2 border border-gray-300 rounded-lg text-sm focus:ring-gold focus:border-gold" min="0" value="500">
+            <div class="border-t pt-4">
+                <div class="flex justify-between text-xl font-bold mb-4">
+                    <span>Total:</span>
+                    <span id="cartTotal" class="gold">R$ 0,00</span>
                 </div>
+                <button onclick="openCheckoutModal()" class="w-full bg-gold text-blue-dark py-3 rounded-lg font-bold hover:bg-yellow-500 transition">
+                    Finalizar Pedido
+                </button>
             </div>
+        </div>
+    </div>
 
-            <!-- Filtros Específicos de Biquíni (Visibilidade controlada pelo JS) -->
-            <div id="bikini-filters" class="space-y-4 hidden">
-                <h4 class="text-lg font-semibold text-gold">Filtros Biquíni</h4>
-                <div class="space-y-2">
-                    <label for="color-filter" class="block text-sm font-medium text-gray-700">Cor</label>
-                    <select id="color-filter" onchange="applyFilters()" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-gold focus:border-gold">
-                        <option value="">Todas as Cores</option>
+    <!-- Admin Modal -->
+    <div id="adminModal" class="modal">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold blue-dark">Gerenciar Produtos (Admin)</h2>
+                <button onclick="closeAdminModal()" class="p-2 hover:bg-gray-100 rounded">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="adminForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Nome do Produto</label>
+                    <input type="text" id="adminName" required class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Categoria</label>
+                    <select id="adminCategory" required class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+                        <option value="">Selecione...</option>
+                        <option value="perfumes-masculino">Perfumes Masculino</option>
+                        <option value="perfumes-feminino">Perfumes Feminino</option>
+                        <option value="kits">Kits</option>
+                        <option value="cremes">Cremes</option>
+                        <option value="sabonetes">Sabonetes</option>
+                        <option value="biquinis">Biquínis</option>
                     </select>
                 </div>
-                <div class="space-y-2">
-                    <label for="size-filter" class="block text-sm font-medium text-gray-700">Tamanho</label>
-                    <select id="size-filter" onchange="applyFilters()" class="w-full p-2 border border-gray-300 rounded-lg text-sm focus:ring-gold focus:border-gold">
-                        <option value="">Todos os Tamanhos</option>
-                    </select>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Preço (R$)</label>
+                    <input type="number" id="adminPrice" required step="0.01" min="0" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
                 </div>
-            </div>
-            
-            <button onclick="clearFilters()" class="w-full border border-gray-300 text-gray-700 font-semibold py-2 rounded-xl hover:bg-gray-100 transition">
-                Limpar Filtros
-            </button>
-        </div>
-    </aside>
-
-    <!-- Conteúdo Principal e Container de Views -->
-    <main class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 flex">
-
-        <!-- O container principal é a área onde a Home e as categorias aparecem -->
-        <div id="view-container" class="flex-grow">
-            <!-- Título Dinâmico da Página -->
-            <h2 id="page-title" class="text-3xl font-bold mb-6 text-gray-800 border-b-2 border-gold pb-2"></h2>
-            
-            <!-- HOME PAGE (Faixada da Loja) -->
-            <div id="view-Home" class="product-view">
-                <div class="bg-dark-blue text-white p-8 rounded-xl mb-8 shadow-xl">
-                    <h3 class="text-4xl font-extrabold text-gold mb-2">Bem-vindo(a) à Ame Import!</h3>
-                    <p class="text-lg">Sua porta de entrada para perfumes, maquiagens e moda praia de alta qualidade.</p>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Descrição</label>
+                    <textarea id="adminDescription" rows="3" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold"></textarea>
                 </div>
-
-                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b border-gray-200 pb-1">🔥 Ofertas da Semana</h4>
-                <div id="home-promotions" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-                    <!-- Produtos em promoção serão injetados aqui -->
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2">URL da Imagem</label>
+                    <input type="text" id="adminImage" placeholder="https://..." class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
                 </div>
-
-                <h4 class="text-2xl font-bold text-gray-800 mb-4 border-b border-gray-200 pb-1">✨ Destaques da Coleção</h4>
-                <div id="home-highlights" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Produtos em destaque serão injetados aqui -->
-                </div>
-            </div>
-
-            <!-- VIEW DE CATEGORIAS (Lista de Produtos Filtrada) -->
-            <div id="view-Perfume Feminino" class="product-view hidden">
-                <div id="product-list-Perfume Feminino" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
-            </div>
-            <div id="view-Perfume Masculino" class="product-view hidden">
-                <div id="product-list-Perfume Masculino" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
-            </div>
-            <div id="view-Kit" class="product-view hidden">
-                <div id="product-list-Kit" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
-            </div>
-            <div id="view-Creme" class="product-view hidden">
-                <div id="product-list-Creme" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
-            </div>
-            <div id="view-Sabonete" class="product-view hidden">
-                <div id="product-list-Sabonete" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
-            </div>
-            <div id="view-Biquíni" class="product-view hidden">
-                <div id="product-list-Biquíni" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"></div>
-            </div>
-            
-        </div>
-    </main>
-    
-    <!-- Carrinho (Sidebar Fixa) -->
-    <aside id="cart-sidebar" class="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-2xl p-6 transform translate-x-full transition-transform duration-300 hidden">
-        <div class="flex justify-between items-center mb-6">
-            <h3 class="text-2xl font-bold text-gold">Seu Carrinho</h3>
-            <!-- Botão de fechar -->
-            <button onclick="document.getElementById('cart-sidebar').classList.add('hidden')" class="text-gray-500 hover:text-gray-800 transition">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-        </div>
-        
-        <div id="cart-items-container" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-            <p id="empty-cart-message" class="text-gray-500 text-center italic">Seu carrinho está vazio.</p>
-            <!-- Itens do carrinho serão renderizados aqui -->
-        </div>
-
-        <div class="mt-6 pt-4 border-t border-gray-200">
-            <div class="flex justify-between items-center text-xl font-bold mb-4">
-                <span>Total:</span>
-                <span id="cart-total" class="text-gold">R$ 0,00</span>
-            </div>
-            <button id="checkout-button" onclick="openCheckoutModal()" disabled class="w-full bg-gold text-dark-blue font-semibold py-3 rounded-xl shadow-md hover:bg-dark-blue hover:text-white transition disabled:opacity-50">
-                Finalizar Compra
-            </button>
-        </div>
-    </aside>
-
-    <!-- Botão de Contato Flutuante -->
-    <div class="fixed bottom-6 right-6 z-30">
-        <button id="social-toggle-button" onclick="toggleSocialMenu()" class="social-menu-toggle bg-dark-blue text-white p-4 rounded-full shadow-lg hover:bg-dark-blue/90 transition transform hover:scale-110">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.111A9.503 9.503 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-        </button>
-
-        <div id="social-menu" class="absolute bottom-16 right-0 space-y-2 hidden">
-            <!-- Link Instagram: SUBSTITUA ESTE LINK PELO SEU -->
-            <a href="https://www.instagram.com/ame_import_oficial" target="_blank" class="block bg-white text-dark-blue p-3 rounded-full shadow-lg hover:bg-gray-100 transition transform hover:scale-105" title="Instagram">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm4.332 2.805A1.696 1.696 0 0116.89 5.61a5.672 5.672 0 01-1.076 3.12 7.086 7.086 0 01-3.743 1.832 7.03 7.03 0 01-4.148-.073A5.73 5.73 0 014.11 5.61a1.696 1.696 0 01.558-.805 1.7 1.7 0 01.815-.49c.27-.083 4.29-.863 5.818-.863s5.548.78 5.818.863a1.7 1.7 0 01.815.49zM12 18c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6zm0-10a4 4 0 100 8 4 4 0 000-8z"/></svg>
-            </a>
-            <!-- Link WhatsApp: SUBSTITUA ESTE NÚMERO PELO SEU -->
-            <a href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20gostaria%20de%20fazer%20um%20pedido%20na%20Ame%20Import." target="_blank" class="block bg-white text-dark-blue p-3 rounded-full shadow-lg hover:bg-gray-100 transition transform hover:scale-105" title="WhatsApp">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.486 2 2 6.486 2 12c0 3.107 1.344 5.925 3.518 7.915L2 22l3.784-1.921A9.957 9.957 0 0012 22c5.514 0 10-4.486 10-10S17.514 2 12 2zm4.84 14.394a.885.885 0 01-.618.334c-.16 0-.323-.038-.475-.113-.758-.372-1.745-.724-2.812-.907-.63-.11-1.16-.142-1.637.135-.114.066-.234.093-.356.093-.16 0-.322-.05-.466-.145-.25-.17-.417-.384-.52-.614a.886.886 0 01-.11-.476c0-.233.104-.45.282-.607.172-.15.353-.25.54-.298.058-.016.12-.02.18-.016.19.014.37.078.53.18.2.124.384.283.542.46.21.238.384.475.52.704.09.155.16.32.2.49.02.08.03.16.03.24 0 .093-.01.18-.03.27-.03.1-.06.2-.1.3-.1.2-.2.38-.33.56-.23.32-.5.58-.8.78-.45.3-.96.53-1.5.65-.24.05-.48.07-.72.07-1.12 0-2.18-.32-3.13-1.02-.27-.2-.49-.43-.68-.68-.67-.88-1.07-1.89-1.1-2.97-.02-.13-.02-.25-.02-.37 0-1.13.4-2.19 1.15-3.08.76-.9 1.8-1.42 2.95-1.42 1.16 0 2.2.53 2.96 1.45.19.23.35.49.49.76.13.25.24.52.3.8.04.16.05.3.05.44 0 .28-.05.55-.16.8-.1.24-.25.46-.42.66-.08.08-.17.15-.26.22-.09.07-.18.13-.28.18-.1.05-.2.09-.3.12-.1.03-.2.05-.3.07-.15.02-.3.03-.45.03-.27 0-.53-.06-.77-.18-.37-.18-.6-.46-.66-.78-.04-.15-.06-.3-.06-.45 0-.25.04-.5.12-.75.08-.23.19-.44.32-.64.12-.17.26-.33.42-.48.2-.18.42-.34.66-.48.24-.13.49-.24.75-.32.27-.09.55-.13.83-.13.56 0 1.05.15 1.5.42.5.3.8.7.9 1.2.04.17.06.33.06.5 0 .54-.2 1.05-.58 1.5-.18.2-.4.36-.63.5a.944.944 0 01-1.35.05 1.042 1.042 0 01-.15-.2c-.1-.13-.2-.27-.28-.42-.09-.16-.14-.33-.16-.5-.02-.2 0-.39.06-.57.06-.18.17-.35.32-.5.09-.08.19-.16.3-.22.1-.06.2-.12.3-.16.1-.04.2-.07.3-.09.1-.02.2-.03.3-.03.1 0 .2.01.3.03.09.02.18.05.27.08.1.04.2.08.28.13.09.06.17.12.25.19.16.14.3.3.43.47.1.13.19.27.27.42.08.15.14.3.18.46.04.16.06.32.06.49 0 .43-.13.84-.36 1.2-.23.36-.55.67-.93.94-.65.48-1.39.75-2.18.8z"/></svg>
-            </a>
-        </div>
-    </div>
-    
-    <!-- Modal de Mensagem (substitui alert()) -->
-    <div id="message-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[102]">
-        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full text-center">
-            <h4 id="modal-title" class="text-xl font-bold mb-3 text-gold">Atenção</h4>
-            <p id="modal-message" class="text-gray-700 mb-4">Mensagem.</p>
-            <button onclick="document.getElementById('message-modal').classList.add('hidden'); document.getElementById('message-modal').classList.remove('flex');" class="bg-gold text-dark-blue px-4 py-2 rounded-lg hover:bg-dark-blue hover:text-white transition">
-                Fechar
-            </button>
-        </div>
-    </div>
-
-    <!-- Modal de Perfil/Cadastro -->
-    <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[102]">
-        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-2xl font-bold text-gold mb-6 border-b pb-2">Meu Perfil e Cadastro</h3>
-            <form id="profile-form" onsubmit="event.preventDefault(); saveUserProfile(this)">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="col-span-full">
-                        <label for="profile-name" class="block text-sm font-medium text-gray-700">Nome Completo</label>
-                        <input type="text" id="profile-name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+                
+                <div id="bikiniAdminFields" style="display: none;">
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold mb-2">Cor</label>
+                        <input type="text" id="adminColor" placeholder="Ex: Preto, Azul..." class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
                     </div>
-                    <div class="col-span-1">
-                        <label for="profile-cpf" class="block text-sm font-medium text-gray-700">CPF</label>
-                        <input type="text" id="profile-cpf" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div class="col-span-1">
-                        <label for="profile-phone" class="block text-sm font-medium text-gray-700">Telefone Fixo</label>
-                        <input type="tel" id="profile-phone" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div class="col-span-1">
-                        <label for="profile-cell" class="block text-sm font-medium text-gray-700">Celular</label>
-                        <input type="tel" id="profile-cell" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div class="col-span-full">
-                        <label for="profile-address" class="block text-sm font-medium text-gray-700">Endereço (Geral)</label>
-                        <textarea id="profile-address" rows="2" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg"></textarea>
-                    </div>
-                </div>
-                <div class="flex justify-between items-center mt-6 pt-4 border-t">
-                    <button type="button" onclick="openProductAdminModal()" class="text-sm font-semibold text-dark-blue hover:text-gold transition">
-                        Gerenciar Produtos (Admin)
-                    </button>
-                    <div class="flex space-x-3">
-                        <button type="button" onclick="document.getElementById('profile-modal').classList.add('hidden'); document.getElementById('profile-modal').classList.remove('flex');" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="bg-gold text-dark-blue px-4 py-2 rounded-lg hover:bg-dark-blue hover:text-white transition">
-                            Salvar Perfil
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de Cadastro de Produto (Admin) -->
-    <div id="product-admin-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[103]">
-        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-2xl font-bold text-dark-blue mb-6 border-b pb-2">Cadastrar Novo Produto</h3>
-            <form id="product-form" onsubmit="event.preventDefault(); addNewProduct(this)">
-                <div class="space-y-4">
+                    
                     <div>
-                        <label for="product-name" class="block text-sm font-medium text-gray-700">Nome do Produto</label>
-                        <input type="text" id="product-name" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="product-description" class="block text-sm font-medium text-gray-700">Descrição</label>
-                        <textarea id="product-description" rows="2" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg"></textarea>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label for="product-price" class="block text-sm font-medium text-gray-700">Preço (R$)</label>
-                            <input type="number" id="product-price" step="0.01" min="0" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label for="product-category" class="block text-sm font-medium text-gray-700">Categoria</label>
-                            <select id="product-category" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                                <!-- Opções de categoria serão preenchidas pelo JS -->
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label for="product-image" class="block text-sm font-medium text-gray-700">URL da Imagem</label>
-                        <input type="url" id="product-image" placeholder="Ex: https://seusite.com/imagem.jpg" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <label for="product-promo" class="flex items-center text-sm font-medium text-gray-700">
-                            <input type="checkbox" id="product-promo" class="h-4 w-4 text-gold border-gray-300 rounded focus:ring-gold mr-2">
-                            Promoção
-                        </label>
-                         <label for="product-highlight" class="flex items-center text-sm font-medium text-gray-700">
-                            <input type="checkbox" id="product-highlight" class="h-4 w-4 text-gold border-gray-300 rounded focus:ring-gold mr-2">
-                            Destaque (Home)
-                        </label>
-                    </div>
-                    <!-- Campos Condicionais para Biquíni -->
-                    <div id="admin-bikini-fields" class="grid grid-cols-2 gap-4 hidden border-t pt-4">
-                        <div>
-                            <label for="admin-color" class="block text-sm font-medium text-gray-700">Cor</label>
-                            <input type="text" id="admin-color" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
-                        <div>
-                            <label for="admin-size" class="block text-sm font-medium text-gray-700">Tamanho</label>
-                            <input type="text" id="admin-size" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                        </div>
+                        <label class="block text-sm font-semibold mb-2">Tamanho</label>
+                        <input type="text" id="adminSize" placeholder="Ex: P, M, G, GG..." class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
                     </div>
                 </div>
                 
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="closeProductAdminModal()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
-                        Voltar
-                    </button>
-                    <button type="submit" class="bg-dark-blue text-white px-4 py-2 rounded-lg hover:bg-gold hover:text-dark-blue transition">
-                        Cadastrar Produto
-                    </button>
-                </div>
+                <button type="submit" class="w-full bg-gold text-blue-dark py-3 rounded-lg font-bold hover:bg-yellow-500 transition">
+                    Cadastrar Produto
+                </button>
             </form>
         </div>
     </div>
-    
-    <!-- Modal de Checkout e Pagamento -->
-    <div id="checkout-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-[102]">
-        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 class="text-2xl font-bold text-gold mb-6 border-b pb-2">Finalizar Pedido</h3>
-            <div id="checkout-summary" class="bg-gray-100 p-4 rounded-lg mb-6 text-sm">
-                <!-- Resumo do carrinho será injetado aqui -->
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="modal">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold blue-dark">Checkout</h2>
+                <button onclick="closeCheckoutModal()" class="p-2 hover:bg-gray-100 rounded">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
             </div>
             
-            <form id="checkout-form" onsubmit="event.preventDefault(); submitOrder(this)">
-                <h4 class="text-xl font-semibold mb-4">Dados de Entrega</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                        <label for="checkout-cep" class="block text-sm font-medium text-gray-700">CEP</label>
-                        <input type="text" id="checkout-cep" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+            <form id="checkoutForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Nome Completo</label>
+                    <input type="text" id="checkoutName" required class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2">E-mail</label>
+                    <input type="email" id="checkoutEmail" required class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Telefone</label>
+                    <input type="tel" id="checkoutPhone" required class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold mb-2">Endereço</label>
+                    <textarea id="checkoutAddress" required rows="2" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-gold"></textarea>
+                </div>
+                
+                <div class="border-t pt-4">
+                    <div class="flex justify-between text-xl font-bold mb-4">
+                        <span>Total:</span>
+                        <span id="checkoutTotal" class="gold">R$ 0,00</span>
                     </div>
-                    <div class="sm:col-span-2">
-                        <label for="checkout-address" class="block text-sm font-medium text-gray-700">Rua/Avenida</label>
-                        <input type="text" id="checkout-address" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="checkout-number" class="block text-sm font-medium text-gray-700">Número</label>
-                        <input type="text" id="checkout-number" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="checkout-neighborhood" class="block text-sm font-medium text-gray-700">Bairro</label>
-                        <input type="text" id="checkout-neighborhood" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="checkout-reference" class="block text-sm font-medium text-gray-700">Ponto de Referência</label>
-                        <input type="text" id="checkout-reference" class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="checkout-city" class="block text-sm font-medium text-gray-700">Cidade</label>
-                        <input type="text" id="checkout-city" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
-                    </div>
-                    <div>
-                        <label for="checkout-state" class="block text-sm font-medium text-gray-700">Estado</label>
-                        <input type="text" id="checkout-state" required class="mt-1 block w-full p-2 border border-gray-300 rounded-lg">
+                </div>
+                
+                <button type="submit" class="w-full bg-gold text-blue-dark py-3 rounded-lg font-bold hover:bg-yellow-500 transition">
+                    Confirmar Pedido
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const REAL_FIREBASE_CONFIG = {
+            apiKey: "AIzaSyBc23pCVw7A6Kbw0C6egJ2WN7aMabSPZv8",
+            authDomain: "ame-import.firebaseapp.com",
+            projectId: "ame-import",
+            storageBucket: "ame-import.firebasestorage.app",
+            messagingSenderId: "977194836818",
+            appId: "1:977194836818:web:82ba955a91533236e0d08b",
+            measurementId: "G-BBMYX2E1B8"
+        };
+
+        // Global State
+        let state = {
+            currentView: 'home',
+            products: [],
+            filteredProducts: [],
+            cart: [],
+            filters: {
+                text: '',
+                minPrice: null,
+                maxPrice: null,
+                color: '',
+                size: ''
+            }
+        };
+
+        let db = null;
+        let auth = null;
+        
+        // ID Fixo para forçar o carregamento, ignorando a autenticação anônima que falha no Vercel
+        const FIXED_USER_ID = "AME_IMPORT_FIXED_USER";
+        let isAuthReady = false; 
+
+
+        // Initialize Firebase with timeout (AGORA O ID É FIXO!)
+        async function initializeFirebase() {
+            const firebaseInit = new Promise(async (resolve, reject) => {
+                try {
+                    // 1. Inicializa o App
+                    firebase.initializeApp(REAL_FIREBASE_CONFIG);
+                    auth = firebase.auth();
+                    db = firebase.firestore();
+                    
+                    // 2. Define o ID de Usuário Fixo
+                    // Isso garante que o DB possa ser acessado imediatamente.
+                    // O "isAuthReady" é definido aqui para liberar a UI.
+                    state.userId = FIXED_USER_ID;
+                    isAuthReady = true;
+
+                    // O carregamento de produtos é a próxima etapa, não a autenticação.
+                    resolve();
+
+                } catch (error) {
+                    reject(error);
+                }
+            });
+
+            const timeout = new Promise((_, reject) => {
+                setTimeout(() => {
+                    console.warn('Firebase initialization timeout: proceeding offline.');
+                    reject(new Error('Firebase initialization timeout'));
+                }, 3000);
+            });
+
+            try {
+                await Promise.race([firebaseInit, timeout]);
+                return true;
+            } catch (error) {
+                // Se o timeout vencer ou ocorrer um erro, tentaremos carregar dados de amostra
+                return false;
+            }
+        }
+
+        // Load products from Firestore (or Sample Data)
+        async function loadProducts() {
+            if (!db) {
+                console.warn('Database not initialized, using sample data');
+                state.products = getSampleProducts();
+                state.filteredProducts = [...state.products];
+                return;
+            }
+
+            try {
+                // Caminho de acesso público: artifacts/{appId}/public/data/products
+                const snapshot = await db.collection('artifacts')
+                    .doc(REAL_FIREBASE_CONFIG.projectId)
+                    .collection('public')
+                    .doc('data')
+                    .collection('products')
+                    .get();
+
+                if (snapshot.empty) {
+                    console.log('No products in database, initializing with sample data');
+                    // Tenta inicializar com dados de amostra APENAS se estiver conectado ao DB
+                    await initializeSampleData();
+                    // Após a inicialização, recarrega
+                    await loadProducts();
+                } else {
+                    state.products = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                    state.filteredProducts = [...state.products];
+                    console.log(`Products loaded from Firestore: ${state.products.length}`);
+                }
+            } catch (error) {
+                console.error('Error loading products from Firestore:', error);
+                // Fallback para dados de amostra se houver erro no Firestore
+                state.products = getSampleProducts();
+                state.filteredProducts = [...state.products];
+            }
+        }
+
+        // Initialize sample data in Firestore
+        async function initializeSampleData() {
+            if (!db) return;
+
+            const sampleProducts = getSampleProducts().map(p => ({
+                ...p,
+                // Garantir IDs únicos baseados no nome ou ID de amostra
+                id: p.name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() + Date.now().toString().slice(-4) 
+            })); 
+            
+            const batch = db.batch();
+
+            const productCollectionRef = db.collection('artifacts')
+                .doc(REAL_FIREBASE_CONFIG.projectId)
+                .collection('public')
+                .doc('data')
+                .collection('products');
+
+            for (const product of sampleProducts) {
+                // Usa um ID de documento único gerado pelo Firestore
+                const docRef = productCollectionRef.doc();
+                batch.set(docRef, product);
+            }
+
+            try {
+                await batch.commit();
+                console.log('Sample data initialized in Firestore.');
+            } catch (error) {
+                console.error('Error committing sample data batch:', error);
+            }
+        }
+
+        // Get sample products
+        function getSampleProducts() {
+             return [
+                {
+                    name: 'Perfume Masculino Premium',
+                    category: 'perfumes-masculino',
+                    price: 189.90,
+                    description: 'Fragrância marcante e sofisticada',
+                    image: 'https://placehold.co/300x300/1E3A8A/FFFFFF?text=P.Masc',
+                    id: 'pm-premium'
+                },
+                {
+                    name: 'Perfume Feminino Elegance',
+                    category: 'perfumes-feminino',
+                    price: 199.90,
+                    description: 'Aroma delicado e envolvente',
+                    image: 'https://placehold.co/300x300/DFA40A/FFFFFF?text=P.Fem',
+                    id: 'pf-elegance'
+                },
+                {
+                    name: 'Kit Presente Luxo',
+                    category: 'kits',
+                    price: 299.90,
+                    description: 'Kit completo com perfume e creme',
+                    image: 'https://placehold.co/300x300/1E3A8A/FFFFFF?text=Kit',
+                    id: 'kit-luxo'
+                },
+                {
+                    name: 'Creme Hidratante Corporal',
+                    category: 'cremes',
+                    price: 79.90,
+                    description: 'Hidratação profunda e duradoura',
+                    image: 'https://placehold.co/300x300/DFA40A/FFFFFF?text=Creme',
+                    id: 'creme-hidratante'
+                },
+                {
+                    name: 'Sabonete Artesanal',
+                    category: 'sabonetes',
+                    price: 29.90,
+                    description: 'Sabonete natural com óleos essenciais',
+                    image: 'https://placehold.co/300x300/1E3A8A/FFFFFF?text=Sabonete',
+                    id: 'sabonete-artesanal'
+                },
+                {
+                    name: 'Biquíni Preto P',
+                    category: 'biquinis',
+                    price: 149.90,
+                    description: 'Biquíni clássico e elegante',
+                    image: 'https://placehold.co/300x300/000000/FFFFFF?text=Biquini+P',
+                    color: 'Preto',
+                    size: 'P',
+                    id: 'biquini-preto-p'
+                },
+                {
+                    name: 'Biquíni Vermelho M',
+                    category: 'biquinis',
+                    price: 159.90,
+                    description: 'Biquíni vibrante e moderno',
+                    image: 'https://placehold.co/300x300/FF0000/FFFFFF?text=Biquini+M',
+                    color: 'Vermelho',
+                    size: 'M',
+                    id: 'biquini-vermelho-m'
+                },
+                {
+                    name: 'Perfume Masculino Sport',
+                    category: 'perfumes-masculino',
+                    price: 169.90,
+                    description: 'Fragrância fresca e energética',
+                    image: 'https://placehold.co/300x300/1E3A8A/FFFFFF?text=Sport',
+                    id: 'pm-sport'
+                }
+            ];
+        }
+
+        // Navigation
+        function navigateTo(view) {
+            state.currentView = view;
+            
+            // Show/hide bikini filters
+            const bikiniFilters = document.getElementById('bikiniFilters');
+            if (view === 'biquinis') {
+                bikiniFilters.style.display = 'block';
+            } else {
+                bikiniFilters.style.display = 'none';
+            }
+            
+            // Close mobile menu
+            const sidebar = document.getElementById('sidebarFilter');
+            sidebar.classList.remove('open');
+            
+            renderView();
+        }
+
+        // Render current view
+        function renderView() {
+            const mainContent = document.getElementById('mainContent');
+            
+            if (state.currentView === 'home') {
+                renderHome(mainContent);
+            } else {
+                renderCategory(mainContent, state.currentView);
+            }
+        }
+
+        // Render home page
+        function renderHome(container) {
+            container.innerHTML = `
+                <div class="max-w-6xl mx-auto">
+                    <div class="text-center mb-12">
+                        <h1 class="text-5xl font-bold blue-dark mb-4">Bem-vindo à Ame Import</h1>
+                        <p class="text-xl text-gray-600">Produtos de qualidade para você</p>
                     </div>
                     
-                    <div class="sm:col-span-3">
-                        <h4 class="text-xl font-semibold mt-6 mb-4 border-t pt-4">Método de Pagamento</h4>
-                        <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-lg" role="alert">
-                            <p class="font-bold">Aviso:</p>
-                            <p>Simulação: O pagamento é apenas uma etapa de confirmação neste modelo.</p>
-                            <div class="mt-2 flex items-center">
-                                <input type="checkbox" id="payment-accept" required class="h-4 w-4 text-gold border-gray-300 rounded focus:ring-gold mr-2">
-                                <label for="payment-accept" class="text-sm">Confirmo os dados acima e desejo finalizar o pedido.</label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+                        <div onclick="navigateTo('perfumes-masculino')" class="cursor-pointer bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition text-center">
+                            <div class="text-6xl mb-4">🧴</div>
+                            <h3 class="text-2xl font-bold blue-dark mb-2">Perfumes Masculino</h3>
+                            <p class="text-gray-600">Fragrâncias marcantes</p>
+                        </div>
+                        
+                        <div onclick="navigateTo('perfumes-feminino')" class="cursor-pointer bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition text-center">
+                            <div class="text-6xl mb-4">💐</div>
+                            <h3 class="text-2xl font-bold blue-dark mb-2">Perfumes Feminino</h3>
+                            <p class="text-gray-600">Aromas envolventes</p>
+                        </div>
+                        
+                        <div onclick="navigateTo('kits')" class="cursor-pointer bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition text-center">
+                            <div class="text-6xl mb-4">🎁</div>
+                            <h3 class="text-2xl font-bold blue-dark mb-2">Kits</h3>
+                            <p class="text-gray-600">Presentes especiais</p>
+                        </div>
+                        
+                        <div onclick="navigateTo('cremes')" class="cursor-pointer bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition text-center">
+                            <div class="text-6xl mb-4">🧴</div>
+                            <h3 class="text-2xl font-bold blue-dark mb-2">Cremes</h3>
+                            <p class="text-gray-600">Hidratação profunda</p>
+                        </div>
+                        
+                        <div onclick="navigateTo('sabonetes')" class="cursor-pointer bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition text-center">
+                            <div class="text-6xl mb-4">🧼</div>
+                            <h3 class="text-2xl font-bold blue-dark mb-2">Sabonetes</h3>
+                            <p class="text-gray-600">Naturais e perfumados</p>
+                        </div>
+                        
+                        <div onclick="navigateTo('biquinis')" class="cursor-pointer bg-white p-8 rounded-lg shadow-lg hover:shadow-xl transition text-center">
+                            <div class="text-6xl mb-4">👙</div>
+                            <h3 class="text-2xl font-bold blue-dark mb-2">Biquínis</h3>
+                            <p class="text-gray-600">Moda praia</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gradient-to-r from-blue-900 to-blue-700 text-white p-12 rounded-lg text-center">
+                        <h2 class="text-3xl font-bold mb-4">Produtos Importados de Qualidade</h2>
+                        <p class="text-xl mb-6">Entrega para todo o Brasil</p>
+                        <button onclick="navigateTo('perfumes-feminino')" class="bg-gold text-blue-dark px-8 py-3 rounded-lg font-bold hover:bg-yellow-500 transition">
+                            Ver Produtos
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render category page
+        function renderCategory(container, category) {
+            applyFilters();
+            
+            const categoryNames = {
+                'perfumes-masculino': 'Perfumes Masculino',
+                'perfumes-feminino': 'Perfumes Feminino',
+                'kits': 'Kits',
+                'cremes': 'Cremes',
+                'sabonetes': 'Sabonetes',
+                'biquinis': 'Biquínis'
+            };
+            
+            const categoryProducts = state.filteredProducts.filter(p => p.category === category);
+            
+            container.innerHTML = `
+                <div class="max-w-6xl mx-auto">
+                    <h1 class="text-4xl font-bold blue-dark mb-8">${categoryNames[category]}</h1>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        ${categoryProducts.length > 0 ? categoryProducts.map(product => `
+                            <div class="product-card bg-white rounded-lg shadow-lg overflow-hidden">
+                                <img src="${product.image}" alt="${product.name}" class="w-full h-64 object-cover">
+                                <div class="p-6">
+                                    <h3 class="text-xl font-bold blue-dark mb-2">${product.name}</h3>
+                                    <p class="text-gray-600 mb-4">${product.description || ''}</p>
+                                    ${product.color ? `<p class="text-sm text-gray-500 mb-1">Cor: ${product.color}</p>` : ''}
+                                    ${product.size ? `<p class="text-sm text-gray-500 mb-2">Tamanho: ${product.size}</p>` : ''}
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-2xl font-bold gold">R$ ${product.price.toFixed(2)}</span>
+                                        <button onclick="addToCart('${product.id || product.name}')" class="bg-blue-dark text-white px-4 py-2 rounded hover:bg-blue-900 transition">
+                                            Adicionar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-gray-500 text-center col-span-full">Nenhum produto encontrado</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Apply filters
+        function applyFilters() {
+            updateFiltersFromInputs(); // Atualiza o estado dos filtros
+
+            let filtered = [...state.products];
+            
+            // Filter by current category
+            if (state.currentView !== 'home') {
+                filtered = filtered.filter(p => p.category === state.currentView);
+            }
+            
+            // Text filter
+            if (state.filters.text) {
+                filtered = filtered.filter(p => 
+                    p.name.toLowerCase().includes(state.filters.text.toLowerCase())
+                );
+            }
+            
+            // Price filters
+            if (state.filters.minPrice !== null && state.filters.minPrice !== '') {
+                filtered = filtered.filter(p => p.price >= parseFloat(state.filters.minPrice));
+            }
+            
+            if (state.filters.maxPrice !== null && state.filters.maxPrice !== '') {
+                filtered = filtered.filter(p => p.price <= parseFloat(state.filters.maxPrice));
+            }
+            
+            // Bikini specific filters
+            if (state.currentView === 'biquinis') {
+                if (state.filters.color) {
+                    filtered = filtered.filter(p => p.color === state.filters.color);
+                }
+                
+                if (state.filters.size) {
+                    filtered = filtered.filter(p => p.size === state.filters.size);
+                }
+            }
+            
+            state.filteredProducts = filtered;
+            
+            if (state.currentView !== 'home') {
+                renderView();
+            }
+        }
+
+        // Clear filters
+        function clearFilters() {
+            document.getElementById('filterText').value = '';
+            document.getElementById('filterMinPrice').value = '';
+            document.getElementById('filterMaxPrice').value = '';
+            document.getElementById('filterColor').value = '';
+            document.getElementById('filterSize').value = '';
+            
+            state.filters = {
+                text: '',
+                minPrice: null,
+                maxPrice: null,
+                color: '',
+                size: ''
+            };
+            
+            applyFilters();
+        }
+
+        // Update filters from inputs
+        function updateFiltersFromInputs() {
+            state.filters.text = document.getElementById('filterText').value;
+            state.filters.minPrice = document.getElementById('filterMinPrice').value;
+            state.filters.maxPrice = document.getElementById('filterMaxPrice').value;
+            state.filters.color = document.getElementById('filterColor').value;
+            state.filters.size = document.getElementById('filterSize').value;
+        }
+
+        // Add event listeners to filter inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            // Este bloco agora usa o botão "Aplicar Filtros"
+            document.getElementById('filterColor').addEventListener('change', applyFilters);
+            document.getElementById('filterSize').addEventListener('change', applyFilters);
+        });
+
+        // Cart functions
+        function addToCart(productId) {
+            // Usa o ID fixo ou o nome, dependendo de como o produto foi criado
+            const product = state.products.find(p => p.id === productId || p.name === productId); 
+            if (!product) return;
+            
+            const cartItem = state.cart.find(item => item.id === productId);
+            if (cartItem) {
+                cartItem.quantity++;
+            } else {
+                state.cart.push({
+                    id: productId,
+                    product: product,
+                    quantity: 1
+                });
+            }
+            
+            updateCart();
+            showNotification('Produto adicionado ao carrinho!');
+        }
+
+        function removeFromCart(productId) {
+            state.cart = state.cart.filter(item => item.id !== productId);
+            updateCart();
+        }
+
+        function updateCartQuantity(productId, quantity) {
+            const cartItem = state.cart.find(item => item.id === productId);
+            if (cartItem) {
+                cartItem.quantity = parseInt(quantity);
+                if (cartItem.quantity <= 0) {
+                    removeFromCart(productId);
+                }
+            }
+            updateCart();
+        }
+
+        function updateCart() {
+            const cartCount = document.getElementById('cartCount');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            const totalItems = state.cart.reduce((sum, item) => sum + item.quantity, 0);
+            const totalPrice = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+            
+            cartCount.textContent = totalItems;
+            cartTotal.textContent = `R$ ${totalPrice.toFixed(2)}`;
+            
+            if (state.cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-gray-500 text-center">Carrinho vazio</p>';
+            } else {
+                cartItems.innerHTML = state.cart.map(item => `
+                    <div class="flex gap-4 border-b pb-4">
+                        <img src="${item.product.image}" alt="${item.product.name}" class="w-20 h-20 object-cover rounded">
+                        <div class="flex-1">
+                            <h4 class="font-semibold">${item.product.name}</h4>
+                            <p class="text-gold font-bold">R$ ${item.product.price.toFixed(2)}</p>
+                            <div class="flex items-center gap-2 mt-2">
+                                <input type="number" value="${item.quantity}" min="1" 
+                                    onchange="updateCartQuantity('${item.id}', this.value)"
+                                    class="w-16 px-2 py-1 border rounded">
+                                <button onclick="removeFromCart('${item.id}')" class="text-red-500 hover:text-red-700">
+                                    Remover
+                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="document.getElementById('checkout-modal').classList.add('hidden'); document.getElementById('checkout-modal').classList.remove('flex');" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
-                        Voltar
-                    </button>
-                    <button type="submit" id="submit-order-button" class="bg-gold text-dark-blue px-4 py-2 rounded-lg hover:bg-dark-blue hover:text-white transition">
-                        Confirmar Pedido (Total: R$ 0,00)
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Scripts do Firebase e Lógica da Aplicação -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, collection, onSnapshot, setDoc, deleteDoc, runTransaction, getDoc, addDoc, writeBatch, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-
-        // Variáveis de Estado
-        let isSocialMenuOpen = false;
-        let isFilterSidebarOpen = false;
-        let db;
-        let auth;
-        let userId = null;
-        let isAuthReady = false;
-        let activeCategory = 'Home'; 
-        let currentCartItems = []; 
-        let allProducts = []; // Novo: Armazena produtos carregados do Firestore
-        let cartTotal = 0; 
-        let userProfileData = null; 
-        
-        // Categorias permitidas (para Admin)
-        const AVAILABLE_CATEGORIES = ['Perfume Feminino', 'Perfume Masculino', 'Kit', 'Creme', 'Sabonete', 'Biquíni'];
-
-        // Estado para os filtros de busca e preço
-        let filterState = {
-            searchText: '',
-            minPrice: 0,
-            maxPrice: 500, 
-            color: '',
-            size: ''
-        };
-
-        // --- Configurações e Variáveis Globais (Fornecidas pelo ambiente) ---
-// --- Configurações do Firebase (AGORA CONFIGURADAS MANUALMENTE) ---
-// Suas chaves de configuração do projeto "ame-import":
-const REAL_FIREBASE_CONFIG = {
-    apiKey: "AIzaSyBc23pCVw7A6Kbw0C6egJ2WN7aMabSPZv8",
-    authDomain: "ame-import.firebaseapp.com",
-    projectId: "ame-import",
-    storageBucket: "ame-import.firebasestorage.app",
-    messagingSenderId: "977194836818",
-    appId: "1:977194836818:web:82ba955a91533236e0d08b",
-    measurementId: "G-BBMYX2E1B8"
-};
-
-const appId = REAL_FIREBASE_CONFIG.projectId;
-const firebaseConfig = REAL_FIREBASE_CONFIG;
-const initialAuthToken = null; // Não necessário para hospedagem normal
-// -----------------------------------------------------------------
-        // Configurações para Biquíni (usadas apenas nos filtros)
-        const BIQUINI_COLORS = ['Preto', 'Azul Marinho', 'Vermelho', 'Verde Militar', 'Amarelo Limão', 'Estampa Tropical', 'Rosa Neon'];
-        const BIQUINI_SIZES = ['P', 'M', 'G', 'GG'];
-
-
-        // --- Funções de UI Auxiliares ---
-
-        function showMessage(title, message) {
-            document.getElementById('modal-title').textContent = title;
-            document.getElementById('modal-message').textContent = message;
-            document.getElementById('message-modal').classList.remove('hidden');
-            document.getElementById('message-modal').classList.add('flex');
-        }
-
-        const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-
-
-        // --- Lógica de Admin de Produtos (Firestore) ---
-
-        /**
-         * Abre o modal de administração de produtos e preenche as categorias.
-         */
-        window.openProductAdminModal = () => {
-            if (!isAuthReady) {
-                 showMessage("Aguarde", "Aguardando conexão com o servidor...");
-                 return;
-            }
-            
-            // Preenche as categorias no formulário
-            const select = document.getElementById('product-category');
-            select.innerHTML = AVAILABLE_CATEGORIES.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-
-            // Adiciona listener para mostrar campos de biquíni se a categoria for 'Biquíni'
-            select.onchange = () => {
-                const fields = document.getElementById('admin-bikini-fields');
-                if (select.value === 'Biquíni') {
-                    fields.classList.remove('hidden');
-                } else {
-                    fields.classList.add('hidden');
-                }
-            };
-            
-            document.getElementById('profile-modal').classList.add('hidden');
-            document.getElementById('product-admin-modal').classList.remove('hidden');
-            document.getElementById('product-admin-modal').classList.add('flex');
-        };
-
-        window.closeProductAdminModal = () => {
-            document.getElementById('product-admin-modal').classList.add('hidden');
-            document.getElementById('product-admin-modal').classList.remove('flex');
-            document.getElementById('profile-modal').classList.remove('hidden'); // Volta para o modal de perfil
-        };
-
-        /**
-         * Adiciona um novo produto à coleção 'products' no Firestore.
-         */
-        window.addNewProduct = async (form) => {
-            if (!db) return;
-
-            const category = form.elements['product-category'].value;
-            const newProduct = {
-                id: Date.now(), // ID simples e único
-                name: form.elements['product-name'].value,
-                description: form.elements['product-description'].value,
-                price: parseFloat(form.elements['product-price'].value),
-                image: form.elements['product-image'].value,
-                category: category,
-                isPromotion: form.elements['product-promo'].checked || false,
-                isHighlight: form.elements['product-highlight'].checked || false,
-                createdAt: new Date().toISOString()
-            };
-
-            // Adiciona campos específicos para Biquíni
-            if (category === 'Biquíni') {
-                newProduct.color = form.elements['admin-color'].value || 'Única';
-                newProduct.size = form.elements['admin-size'].value || 'Único';
-            }
-            
-            try {
-                // Salva na coleção pública para que todos os usuários possam ver
-                const productRef = doc(db, `artifacts/${appId}/public/data/products`, newProduct.id.toString());
-                await setDoc(productRef, newProduct);
-
-                showMessage("Sucesso!", `Produto "${newProduct.name}" cadastrado e visível na loja.`);
-                form.reset();
-                closeProductAdminModal();
-            } catch (error) {
-                console.error("Erro ao cadastrar produto:", error);
-                showMessage("Erro de Cadastro", "Não foi possível cadastrar o produto. Verifique o console.");
-            }
-        };
-
-        /**
-         * Inicializa o listener para carregar a lista de produtos do Firestore.
-         */
-        function loadProducts() {
-            if (!db) return;
-
-            // Define a referência da coleção pública de produtos
-            const productsColRef = collection(db, `artifacts/${appId}/public/data/products`);
-            
-            // O query() sem orderBy garante que não precisamos de índices complexos.
-            const q = query(productsColRef); 
-
-            onSnapshot(q, (snapshot) => {
-                allProducts = snapshot.docs.map(doc => ({
-                    ...doc.data(),
-                    id: parseInt(doc.id) // Garante que o ID é um número
-                }));
-                console.log(`[Firestore] Produtos carregados: ${allProducts.length}`);
-                
-                // Renderiza a view atual com os novos produtos
-                if (activeCategory === 'Home') {
-                    renderHomeContent();
-                } else {
-                    renderProducts(activeCategory);
-                }
-            }, (error) => {
-                console.error("Erro ao carregar produtos:", error);
-                showMessage("Erro de Sincronização", "Ocorreu um erro ao carregar os produtos. Recarregue a página.");
-            });
-        }
-        
-        // --- Lógica de Perfil (Firestore) ---
-        
-        const getProfileDocRef = () => {
-            if (!db || !userId) return null;
-            return doc(db, `artifacts/${appId}/users/${userId}/profile/main`);
-        };
-
-        async function loadUserProfile() {
-            const profileRef = getProfileDocRef();
-            if (!profileRef) return;
-             try {
-                const docSnap = await getDoc(profileRef);
-                userProfileData = docSnap.exists() ? docSnap.data() : null;
-            } catch (error) {
-                console.error("Erro ao carregar dados do perfil:", error);
-                userProfileData = null;
-            }
-
-            const form = document.getElementById('profile-form');
-            if (userProfileData) {
-                form.elements['profile-name'].value = userProfileData.name || '';
-                form.elements['profile-cpf'].value = userProfileData.cpf || '';
-                form.elements['profile-phone'].value = userProfileData.phone || '';
-                form.elements['profile-cell'].value = userProfileData.cell || '';
-                form.elements['profile-address'].value = userProfileData.address || '';
-            } else {
-                form.reset();
+                `).join('');
             }
         }
 
-        async function saveUserProfile(form) {
-            const profileRef = getProfileDocRef();
-            if (!profileRef) {
-                showMessage("Erro de Perfil", "Usuário não autenticado. Não foi possível salvar o perfil.");
-                return;
-            }
-
-            const profileData = {
-                name: form.elements['profile-name'].value,
-                cpf: form.elements['profile-cpf'].value,
-                phone: form.elements['profile-phone'].value,
-                cell: form.elements['profile-cell'].value,
-                address: form.elements['profile-address'].value,
-                updatedAt: new Date().toISOString()
-            };
-
-            try {
-                await setDoc(profileRef, profileData, { merge: true });
-                userProfileData = profileData; // Atualiza o estado local
-                document.getElementById('profile-modal').classList.add('hidden');
-                document.getElementById('profile-modal').classList.remove('flex');
-                showMessage("Sucesso", "Seu perfil foi salvo com sucesso!");
-            } catch (error) {
-                console.error("Erro ao salvar perfil:", error);
-                showMessage("Erro", "Não foi possível salvar o perfil. Tente novamente.");
-            }
+        function toggleCart() {
+            const cartSidebar = document.getElementById('cartSidebar');
+            cartSidebar.classList.toggle('open');
         }
 
-        window.openProfileModal = () => {
-            if (!isAuthReady) {
-                 showMessage("Aguarde", "Aguardando conexão com o servidor...");
-                 return;
-            }
-            loadUserProfile();
-            document.getElementById('profile-modal').classList.remove('hidden');
-            document.getElementById('profile-modal').classList.add('flex');
+        // Modal functions
+        function openAdminModal() {
+            document.getElementById('adminModal').classList.add('open');
         }
 
+        function closeAdminModal() {
+            document.getElementById('adminModal').classList.remove('open');
+            document.getElementById('adminForm').reset();
+        }
 
-        // --- Lógica de Checkout ---
-        
-        window.openCheckoutModal = async () => {
-            if (!isAuthReady) {
-                 showMessage("Aguarde", "Aguardando conexão com o servidor...");
-                 return;
-            }
-
-            if (currentCartItems.length === 0) {
-                showMessage("Carrinho Vazio", "Adicione produtos ao carrinho antes de finalizar a compra!");
+        function openCheckoutModal() {
+            if (state.cart.length === 0) {
+                showNotification('Carrinho vazio!');
                 return;
             }
             
-            // 1. Renderiza o Resumo do Carrinho
-            const summaryElement = document.getElementById('checkout-summary');
-            const totalElement = document.getElementById('submit-order-button');
-            summaryElement.innerHTML = `
-                <p class="font-bold text-lg mb-2">Resumo do Pedido (${currentCartItems.length} itens):</p>
-                ${currentCartItems.map(item => `
-                    <p class="text-sm">${item.quantity}x ${item.name} (${formatCurrency(item.price)})</p>
-                `).join('')}
-                <p class="font-extrabold text-lg mt-3 text-gold">Total: ${formatCurrency(cartTotal)}</p>
-            `;
-            totalElement.textContent = `Confirmar Pedido (Total: ${formatCurrency(cartTotal)})`;
-
-            // 2. Pré-preenchimento de Endereço
-            await loadUserProfile(); // Garante os dados mais recentes
-            const form = document.getElementById('checkout-form');
-            if (userProfileData && userProfileData.address) {
-                // Implementação simples de pré-preenchimento
-                form.elements['checkout-address'].value = userProfileData.address.split(',')[0] || '';
-                form.elements['checkout-cep'].value = '00000-000'; 
-                form.elements['checkout-number'].value = 'S/N';
-                form.elements['checkout-neighborhood'].value = 'Centro';
-                form.elements['checkout-city'].value = 'São Paulo';
-                form.elements['checkout-state'].value = 'SP';
-                form.elements['checkout-reference'].value = ''; 
-            } else {
-                form.reset();
-            }
-
-            document.getElementById('cart-sidebar').classList.add('hidden'); // Fecha o carrinho
-            document.getElementById('checkout-modal').classList.remove('hidden');
-            document.getElementById('checkout-modal').classList.add('flex');
-        };
-
-        window.submitOrder = async (form) => {
-            if (currentCartItems.length === 0 || !db || !userId) {
-                showMessage("Erro", "Carrinho vazio ou erro de autenticação.");
-                return;
-            }
-
-            const orderData = {
-                userId: userId,
-                items: currentCartItems.map(item => ({
-                    productId: item.productId,
-                    name: item.name,
-                    price: item.price,
-                    quantity: item.quantity
-                })),
-                total: cartTotal,
-                delivery: {
-                    cep: form.elements['checkout-cep'].value,
-                    address: form.elements['checkout-address'].value,
-                    number: form.elements['checkout-number'].value,
-                    neighborhood: form.elements['checkout-neighborhood'].value,
-                    city: form.elements['checkout-city'].value,
-                    state: form.elements['checkout-state'].value,
-                    reference: form.elements['checkout-reference'].value || 'N/A'
-                },
-                status: 'Pending Payment Simulation',
-                orderDate: new Date().toISOString()
-            };
-
-            const cartColRef = collection(db, getCartCollectionPath());
-            // Salva o pedido na coleção de orders (privada do usuário)
-            const ordersColRef = collection(db, `artifacts/${appId}/users/${userId}/orders`); 
-            
-            try {
-                await addDoc(ordersColRef, orderData);
-
-                // Esvazia o carrinho usando batch
-                const batch = writeBatch(db);
-                currentCartItems.forEach(item => {
-                    batch.delete(doc(cartColRef, item.id));
-                });
-                await batch.commit();
-
-                document.getElementById('checkout-modal').classList.add('hidden');
-                document.getElementById('checkout-modal').classList.remove('flex');
-                showMessage("Pedido Finalizado!", `Seu pedido de ${formatCurrency(cartTotal)} foi simulado e registrado! Seu carrinho está vazio.`);
-
-            } catch (error) {
-                console.error("Erro ao finalizar o pedido:", error);
-                showMessage("Erro de Pedido", "Não foi possível finalizar o pedido. Tente novamente.");
-            }
-        };
-
-
-        // --- Lógica de Navegação e Filtros ---
-
-        /**
-         * Alterna a visibilidade da sidebar de filtros (usada no mobile).
-         */
-        window.toggleFilterSidebar = () => {
-            const sidebar = document.getElementById('filter-sidebar');
-            isFilterSidebarOpen = !isFilterSidebarOpen;
-            if (isFilterSidebarOpen) {
-                sidebar.classList.remove('-translate-x-full');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-            }
-        };
-
-        window.setCategory = (category) => {
-            activeCategory = category;
-            
-            // 1. Atualiza o estado dos links de navegação
-            document.querySelectorAll('.nav-link').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            // Ativa links de desktop e mobile
-            document.getElementById(`nav-${category}`)?.classList.add('active');
-            document.getElementById(`nav-mobile-${category}`)?.classList.add('active');
-
-            // 2. Alterna a visibilidade das views
-            document.querySelectorAll('.product-view').forEach(view => {
-                view.classList.add('hidden');
-            });
-            document.getElementById(`view-${category}`).classList.remove('hidden');
-            
-            // 3. Atualiza o título
-            document.getElementById('page-title').textContent = category === 'Home' ? 'Faixada e Destaques' : `Produtos: ${category}`;
-
-            // 4. Aplica filtros para a nova categoria (limpa filtros se mudar de categoria, exceto Home)
-            if (category !== 'Home') {
-                applyFilters();
-            } else {
-                renderHomeContent();
-            }
-            
-            // 5. Fecha o sidebar de filtros se estiver no mobile
-            if (isFilterSidebarOpen) {
-                toggleFilterSidebar();
-            }
-        };
-
-        window.applyFilters = () => {
-            filterState.searchText = document.getElementById('search-input').value.toLowerCase().trim();
-            filterState.minPrice = parseFloat(document.getElementById('min-price').value) || 0;
-            filterState.maxPrice = parseFloat(document.getElementById('max-price').value) || 999999;
-            filterState.color = document.getElementById('color-filter').value;
-            filterState.size = document.getElementById('size-filter').value;
-
-            const bikiniFiltersPanel = document.getElementById('bikini-filters');
-            if (activeCategory === 'Biquíni') {
-                bikiniFiltersPanel.classList.remove('hidden');
-            } else {
-                bikiniFiltersPanel.classList.add('hidden');
-                // Garante que filtros de cor/tamanho não se apliquem a outras categorias
-                filterState.color = '';
-                filterState.size = '';
-            }
-
-            // A Home não usa o sistema de lista de produtos e filtros.
-            if (activeCategory !== 'Home') {
-                renderProducts(activeCategory);
-            }
+            const totalPrice = state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+            document.getElementById('checkoutTotal').textContent = `R$ ${totalPrice.toFixed(2)}`;
+            document.getElementById('checkoutModal').classList.add('open');
         }
 
-        window.clearFilters = () => {
-            document.getElementById('search-input').value = '';
-            document.getElementById('min-price').value = 0;
-            document.getElementById('max-price').value = 500; 
-            document.getElementById('color-filter').value = '';
-            document.getElementById('size-filter').value = '';
-            
-            applyFilters(); 
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.remove('open');
+            document.getElementById('checkoutForm').reset();
         }
 
-        // --- Lógica do Carrinho (Firestore) ---
-        
-        const getCartCollectionPath = () => {
-            return `artifacts/${appId}/users/${userId}/shopping_cart`;
-        };
-
-        async function addToCart(product) {
-            if (!db || !userId) return;
-            const itemDocRef = doc(db, getCartCollectionPath(), product.id.toString());
-            try {
-                await runTransaction(db, async (transaction) => {
-                    const itemDoc = await transaction.get(itemDocRef);
-                    if (itemDoc.exists()) {
-                        const newQuantity = itemDoc.data().quantity + 1;
-                        transaction.update(itemDocRef, { quantity: newQuantity });
-                        // Mensagem de sucesso será disparada pelo listener do onSnapshot
-                    } else {
-                        transaction.set(itemDocRef, {
-                            id: product.id,
-                            productId: product.id,
-                            name: product.name,
-                            price: product.price,
-                            quantity: 1,
-                            createdAt: new Date().toISOString()
-                        });
-                        // Mensagem de sucesso será disparada pelo listener do onSnapshot
-                    }
-                });
-            } catch (error) {
-                console.error("Erro ao adicionar/atualizar item no carrinho:", error);
-                showMessage("Erro", "Não foi possível adicionar o item ao carrinho. Tente novamente.");
-            }
+        // Show notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-20 right-4 bg-gold text-blue-dark px-6 py-3 rounded-lg shadow-lg z-50 transition transform duration-300 translate-y-0 opacity-100';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                // Fade out and remove
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateY(-20px)';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
         }
 
-        async function updateQuantity(docId, newQuantity) {
-            if (!db || !userId) return;
-            const quantity = parseInt(newQuantity, 10);
-            if (quantity <= 0) {
-                await removeItem(docId);
-                return;
-            }
-            const itemDocRef = doc(db, getCartCollectionPath(), docId);
-            try {
-                await setDoc(itemDocRef, { quantity: quantity }, { merge: true });
-            } catch (error) {
-                console.error("Erro ao atualizar a quantidade:", error);
-                showMessage("Erro", "Não foi possível atualizar a quantidade. Tente novamente.");
-            }
-        }
-
-        async function removeItem(docId) {
-            if (!db || !userId) return;
-            const itemDocRef = doc(db, getCartCollectionPath(), docId);
-            try {
-                await deleteDoc(itemDocRef);
-            } catch (error) {
-                console.error("Erro ao remover item:", error);
-                showMessage("Erro", "Não foi possível remover o item. Tente novamente.");
-            }
-        }
-
-
-        // --- Funções de Renderização de UI ---
-
-        function renderBikiniFilters() {
-            const colorSelect = document.getElementById('color-filter');
-            const sizeSelect = document.getElementById('size-filter');
-
-            // Limpa e preenche Cor
-            colorSelect.innerHTML = '<option value="">Todas as Cores</option>';
-            BIQUINI_COLORS.forEach(color => {
-                colorSelect.innerHTML += `<option value="${color}" ${filterState.color === color ? 'selected' : ''}>${color}</option>`;
-            });
-
-            // Limpa e preenche Tamanho
-            sizeSelect.innerHTML = '<option value="">Todos os Tamanhos</option>';
-            BIQUINI_SIZES.forEach(size => {
-                sizeSelect.innerHTML += `<option value="${size}" ${filterState.size === size ? 'selected' : ''}>${size}</option>`;
-            });
-        }
-        
-        function renderHomeContent() {
-            const promotionsContainer = document.getElementById('home-promotions');
-            const highlightsContainer = document.getElementById('home-highlights');
-            
-            // Filtra produtos do Firestore para promoções e destaques
-            const promoProducts = allProducts.filter(p => p.isPromotion).slice(0, 3);
-            const highlightProducts = allProducts.filter(p => p.isHighlight).slice(0, 3);
-            
-            const renderProductCard = (product) => `
-                <div class="bg-white rounded-xl p-4 shadow-md hover:shadow-gold transition duration-300 flex flex-col">
-                    <img src="${product.image}" alt="${product.name}" class="w-24 h-24 mx-auto rounded-lg mb-4 object-cover border border-gray-100" onerror="this.onerror=null; this.src='https://placehold.co/100x100/A0A0A0/FFFFFF?text=IMG'">
-                    <span class="text-xs font-semibold text-gray-500 mb-1">${product.category}</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">${product.name}</h3>
-                    <p class="text-sm text-gray-600 mb-3 flex-grow">${product.description}</p>
-                    <div class="mt-auto pt-3 border-t border-gray-100 flex justify-between items-center">
-                        <span class="text-2xl font-extrabold text-gold">${formatCurrency(product.price)}</span>
-                        <button onclick="addToCartFunc(${product.id})" class="bg-gold text-dark-blue px-4 py-2 rounded-lg font-semibold text-sm hover:bg-dark-blue hover:text-white transition transform hover:scale-105">
-                            Adicionar
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            promotionsContainer.innerHTML = promoProducts.length > 0 ? promoProducts.map(renderProductCard).join('') : '<p class="col-span-full text-gray-500">Nenhuma promoção cadastrada. Cadastre produtos como Admin!</p>';
-            highlightsContainer.innerHTML = highlightProducts.length > 0 ? highlightProducts.map(renderProductCard).join('') : '<p class="col-span-full text-gray-500">Nenhum destaque cadastrado. Cadastre produtos como Admin!</p>';
-        }
-
-
-        function renderProducts(category) {
-            const container = document.getElementById(`product-list-${category}`);
-            if (!container) return;
-            
-            let filteredProducts = allProducts.filter(p => p.category === category);
-            
-            const searchText = filterState.searchText;
-            if (searchText) {
-                filteredProducts = filteredProducts.filter(p => p.name.toLowerCase().includes(searchText) || p.description.toLowerCase().includes(searchText));
-            }
-
-            const minPrice = filterState.minPrice;
-            const maxPrice = filterState.maxPrice;
-            filteredProducts = filteredProducts.filter(p => p.price >= minPrice && p.price <= maxPrice);
-
-            if (category === 'Biquíni') {
-                renderBikiniFilters();
-                if (filterState.color) {
-                    filteredProducts = filteredProducts.filter(p => p.color === filterState.color);
-                }
-                if (filterState.size) {
-                    filteredProducts = filteredProducts.filter(p => p.size === filterState.size);
-                }
-            }
-
-
-            if (filteredProducts.length === 0) {
-                container.innerHTML = `<p class="text-center text-lg text-gray-500 italic py-10 w-full col-span-full">Nenhum produto encontrado na categoria ${category} com os filtros atuais.</p>`;
-                return;
-            }
-
-            container.innerHTML = filteredProducts.map(product => `
-                <div class="bg-white rounded-xl p-4 shadow-md hover:shadow-gold transition duration-300 flex flex-col">
-                    <img src="${product.image}" alt="${product.name}" class="w-24 h-24 mx-auto rounded-lg mb-4 object-cover border border-gray-100" onerror="this.onerror=null; this.src='https://placehold.co/100x100/A0A0A0/FFFFFF?text=IMG'">
-                    <span class="text-xs font-semibold text-gray-500 mb-1">${product.category}</span>
-                    <h3 class="text-xl font-bold text-gray-800 mb-2">${product.name}</h3>
-                    <p class="text-sm text-gray-600 mb-3 flex-grow">${product.description}</p>
-                    ${product.color ? `<p class="text-xs font-medium text-gray-700">Cor: ${product.color} | Tam: ${product.size}</p>` : ''}
-                    <div class="mt-auto pt-3 border-t border-gray-100 flex justify-between items-center">
-                        <span class="text-2xl font-extrabold text-gold">${formatCurrency(product.price)}</span>
-                        <button onclick="addToCartFunc(${product.id})" class="bg-gold text-dark-blue px-4 py-2 rounded-lg font-semibold text-sm hover:bg-dark-blue hover:text-white transition transform hover:scale-105">
-                            Adicionar
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function renderCart(cartItems) {
-            currentCartItems = cartItems; 
-            const container = document.getElementById('cart-items-container');
-            const totalElement = document.getElementById('cart-total');
-            const countElement = document.getElementById('cart-item-count');
-            const emptyMessage = document.getElementById('empty-cart-message');
-            const checkoutButton = document.getElementById('checkout-button');
-
-            if (cartItems.length === 0) {
-                container.innerHTML = '';
-                emptyMessage.classList.remove('hidden');
-                totalElement.textContent = formatCurrency(0);
-                countElement.textContent = '0';
-                checkoutButton.disabled = true;
-                cartTotal = 0;
-                return;
-            }
-
-            emptyMessage.classList.add('hidden');
-            let total = 0;
-
-            const cartHtml = cartItems.map(item => {
-                const productData = allProducts.find(p => p.id === item.productId);
-                const currentPrice = productData ? productData.price : item.price;
-                
-                const subtotal = currentPrice * item.quantity;
-                total += subtotal;
-
-                return `
-                    <div class="flex items-center space-x-4 p-3 bg-white border border-gray-100 rounded-lg shadow-sm">
-                        <img src="${productData ? productData.image : 'https://placehold.co/50x50/DFA40A/FFFFFF?text=I'}" alt="${item.name}" class="w-12 h-12 rounded-full object-cover">
-                        <div class="flex-grow">
-                            <h4 class="font-semibold text-gray-800 text-sm">${item.name}</h4>
-                            <span class="text-xs text-gray-500">${formatCurrency(currentPrice)} cada</span>
-                        </div>
-                        <div class="flex items-center space-x-2">
-                            <input
-                                type="number"
-                                min="1"
-                                value="${item.quantity}"
-                                onchange="updateQuantity('${item.id}', this.value)"
-                                class="w-12 text-center border rounded-md p-1 text-sm focus:border-gold focus:ring-gold"
-                            >
-                            <button onclick="removeItem('${item.id}')" class="text-red-500 hover:text-red-700 transition p-1 rounded-full">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = cartHtml;
-            totalElement.textContent = formatCurrency(total);
-            countElement.textContent = cartItems.reduce((sum, item) => sum + item.quantity, 0).toString();
-            checkoutButton.disabled = false;
-            cartTotal = total;
-        }
-
-        /**
-         * Inicializa o listener de tempo real do carrinho do Firestore.
-         */
-        function loadCart() {
-            if (!db || !userId) return;
-
-            const cartColRef = collection(db, getCartCollectionPath());
-
-            onSnapshot(cartColRef, (snapshot) => {
-                const cartItems = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    const productData = allProducts.find(p => p.id === data.productId);
-                    return {
-                        ...data,
-                        id: doc.id, 
-                        price: productData ? productData.price : data.price, 
-                        name: productData ? productData.name : data.name 
-                    };
-                });
-                renderCart(cartItems);
-            }, (error) => {
-                console.error("Erro ao carregar o carrinho:", error);
-                // Não mostra erro para o usuário final, apenas no console
-            });
-        }
-
-        // --- Mapeamento de Funções Globais e Outras Utilitárias ---
-
-        window.addToCartFunc = (productId) => {
-            const product = allProducts.find(p => p.id === productId);
-            if (product) {
-                addToCart(product);
-            }
-        };
-
-        window.toggleSocialMenu = () => {
-            const menu = document.getElementById('social-menu');
-            const button = document.getElementById('social-toggle-button');
-            isSocialMenuOpen = !isSocialMenuOpen;
-            
-            if (isSocialMenuOpen) {
-                menu.classList.remove('hidden');
-                menu.classList.add('flex', 'flex-col-reverse'); 
-                button.classList.add('transform', 'rotate-45'); 
-            } else {
-                menu.classList.add('hidden');
-                menu.classList.remove('flex', 'flex-col-reverse');
-                button.classList.remove('transform', 'rotate-45');
-            }
-        };
-
-
-// --- Inicialização do Firebase e Autenticação ---
-
-// Função auxiliar para forçar o display após um timeout
-function forceDisplay() {
-    console.warn("TIMEOUT: Firebase demorou para conectar. Exibindo UI agora.");
-    if (!isAuthReady) {
-        // Se a autenticação ainda não terminou, forçamos o display da UI
-        userId = crypto.randomUUID(); // Fallback para ID anônimo
-        initializeUI();
-    }
-}
-
-// --- Funções de Inicialização de UI ---
-function initializeUI() {
-    // 1. Esconde o overlay de carregamento
-    document.getElementById('loading-overlay').classList.add('hidden');
-    
-    // 2. Define o display do ID do usuário (parcial)
-    const displayId = `ID: ${userId.substring(0, 8)}...`;
-    document.getElementById('user-id-display')?.textContent = displayId;
-    document.getElementById('user-id-display-mobile')?.textContent = displayId;
-    
-    // 3. Define a HOME como a tela inicial
-    setCategory('Home');
-}
-
-// --- Inicialização do Firebase e Autenticação (VERSÃO FINAL E À PROVA DE FALHAS) ---
-async function initializeAppAndAuth() {
-    setLogLevel('debug');
-    
-    if (!firebaseConfig) {
-        console.error("Erro de configuração", "As configurações do Firebase estão ausentes.");
-        document.getElementById('loading-overlay').classList.add('hidden');
-        initializeUI();
-        return;
-    }
-
-    try {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
-        
-        // Listener principal de autenticação (só roda UMA VEZ no estado inicial)
-        const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-            if (isAuthReady) return; // Se já foi inicializado, ignore
-            
-            if (user) {
-                userId = user.uid;
-            } else {
-                // Tenta autenticação anônima se não estiver logado
-                await signInAnonymously(auth);
-                // O onAuthStateChanged rodará novamente com o usuário anônimo
-                return;
-            }
-
-            // A partir daqui, temos um userId válido (anônimo ou real)
-            isAuthReady = true;
-
-            // 1. Carrega os produtos (o que era o principal ponto de travamento)
-            loadProducts(); 
-            
-            // 2. Carrega os dados de usuário (carrinho, perfil)
-            loadCart(); 
-            loadUserProfile();
-
-            // 3. Inicializa a UI (Remove o overlay e mostra a loja)
-            initializeUI();
-            
-            unsubscribeAuth(); // Remove o listener após a inicialização
+        // Toggle mobile menu
+        document.getElementById('menuToggle').addEventListener('click', () => {
+            const sidebar = document.getElementById('sidebarFilter');
+            sidebar.classList.toggle('open');
         });
 
-    } catch (error) {
-        console.error("Erro fatal na inicialização do Firebase:", error);
-        showMessage("Erro ao conectar com a loja. Tente recarregar a página.", 'error');
-        document.getElementById('loading-overlay').classList.add('hidden');
-    }
-}
+        // Admin category change
+        document.getElementById('adminCategory').addEventListener('change', (e) => {
+            const bikiniFields = document.getElementById('bikiniAdminFields');
+            if (e.target.value === 'biquinis') {
+                bikiniFields.style.display = 'block';
+            } else {
+                bikiniFields.style.display = 'none';
+            }
+        });
 
-// O PROMISE.RACE É A SOLUÇÃO FINAL: Ele executa o Firebase E o timer.
-const timeout = new Promise(resolve => setTimeout(() => {
-    forceDisplay();
-    resolve('timeout');
-}, 3000)); // 3 segundos de timeout
+        // Admin form submit
+        document.getElementById('adminForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const product = {
+                name: document.getElementById('adminName').value,
+                category: document.getElementById('adminCategory').value,
+                price: parseFloat(document.getElementById('adminPrice').value),
+                description: document.getElementById('adminDescription').value,
+                image: document.getElementById('adminImage').value || 'https://placehold.co/300x300/1E3A8A/FFFFFF?text=Produto',
+                id: Date.now().toString() // Novo ID
+            };
+            
+            if (product.category === 'biquinis') {
+                product.color = document.getElementById('adminColor').value;
+                product.size = document.getElementById('adminSize').value;
+            }
+            
+            try {
+                if (db) {
+                    // Usando o caminho de coleção que definimos: artifacts/{appId}/public/data/products
+                    await db.collection('artifacts')
+                        .doc(REAL_FIREBASE_CONFIG.projectId)
+                        .collection('public')
+                        .doc('data')
+                        .collection('products')
+                        .doc(product.id)
+                        .set(product);
+                    
+                    showNotification('Produto cadastrado com sucesso! (Firebase)');
+                    // Não é mais necessário um loadProducts completo, pois o Firestore sincroniza (onSnapshot)
+                } else {
+                    // Fallback se database não estiver disponível
+                    state.products.push(product);
+                    state.filteredProducts = [...state.products];
+                    showNotification('Produto cadastrado localmente!');
+                }
+                
+                // Recarrega a view, no caso de ter adicionado na categoria atual
+                renderView(); 
+                closeAdminModal();
+            } catch (error) {
+                console.error('Error adding product:', error);
+                showNotification('Erro ao cadastrar produto. Verifique as Regras de Segurança do Firebase!');
+            }
+        });
 
-Promise.race([initializeAppAndAuth(), timeout]).catch(error => {
-    console.error("Erro durante a corrida de inicialização:", error);
-    forceDisplay();
-});
+        // Checkout form submit
+        document.getElementById('checkoutForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const orderData = {
+                userId: state.userId,
+                name: document.getElementById('checkoutName').value,
+                email: document.getElementById('checkoutEmail').value,
+                phone: document.getElementById('checkoutPhone').value,
+                address: document.getElementById('checkoutAddress').value,
+                items: state.cart.map(item => ({
+                    productId: item.id,
+                    name: item.product.name,
+                    price: item.product.price,
+                    quantity: item.quantity
+                })),
+                total: state.cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0),
+                date: new Date().toISOString(),
+                status: 'Pedido Simulado'
+            };
+            
+            console.log('Order placed:', orderData);
+            
+            // Simulação de envio para o Firestore (Coleção privada do usuário: orders)
+            if (db && state.userId) {
+                 try {
+                    await db.collection('artifacts')
+                        .doc(REAL_FIREBASE_CONFIG.projectId)
+                        .collection('users')
+                        .doc(state.userId)
+                        .collection('orders')
+                        .add(orderData);
+                    
+                    console.log('Order saved to Firestore.');
+
+                 } catch (error) {
+                    console.error('Error saving order:', error);
+                    showNotification('Aviso: Pedido simulado, mas não salvo no Firestore.');
+                 }
+            }
+
+            showNotification('Pedido realizado com sucesso!');
+            state.cart = [];
+            updateCart();
+            closeCheckoutModal();
+            toggleCart();
+        });
+
+        // Initialize app
+        async function init() {
+            const loadingScreen = document.getElementById('loadingScreen');
+            
+            // Tenta inicializar o Firebase com o ID Fixo e timeout
+            const firebaseConnected = await initializeFirebase();
+            
+            // Carrega os produtos do DB ou de amostra
+            await loadProducts();
+
+            // Configura o listener do carrinho se o DB estiver conectado
+            if (db && state.userId) {
+                try {
+                    // Simulação de onSnapshot (Compat mode não tem onSnapshot de collection fácil)
+                    // Vamos usar um listener de documento para manter a coerência (apenas mockando a atualização)
+                    // Para simplificar no modo compat.js, vamos apenas carregar uma vez no final
+                } catch (e) {
+                    console.error("Could not set up cart listener in compat mode", e);
+                }
+            }
+
+            renderView();
+            updateCart();
+            
+            // Esconde a tela de carregamento após a inicialização
+            loadingScreen.classList.add('hidden');
+
+            // Se for a primeira execução e estiver conectado ao DB, exibe a notificação
+            if (firebaseConnected && state.products.length === 0) {
+                 showNotification('Banco de dados vazio. Dados de amostra foram adicionados ao Firebase. Recarregue a página para confirmar!');
+            }
+        }
+
+        // Start the app
+        init();
     </script>
 </body>
 </html>
