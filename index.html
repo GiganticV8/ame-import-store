@@ -1129,29 +1129,83 @@ const initialAuthToken = null; // Não necessário para hospedagem normal
 
         // --- Inicialização do Firebase e Autenticação ---
 
-        async function initializeAppAndAuth() {
-            setLogLevel('Debug');
-            if (!firebaseConfig) {
-                console.error("Firebase config não encontrado. Usando modo offline.");
-                showMessage("Erro de Configuração", "As configurações do Firebase estão ausentes. O carrinho e perfil não serão persistentes.");
-                document.getElementById('loading-overlay').classList.add('hidden');
-                return;
+// Função auxiliar para forçar o display após um timeout
+function forceDisplay() {
+    console.warn("TIMEOUT: Firebase demorou para conectar. Exibindo UI agora.");
+    document.getElementById('loading-overlay').classList.add('hidden');
+    // Chama display mesmo que o isAuthReady ainda seja falso.
+    initializeDisplay(); 
+}
+
+// --- Inicialização do Firebase e Autenticação (REVISADO COM TIMEOUT) ---
+async function initializeAppAndAuth() {
+    setLogLevel('debug'); // Use 'debug' para ver logs no console
+    
+    // 1. Verificar configuração
+    if (!firebaseConfig) {
+        console.error("Erro de configuração", "As configurações do Firebase estão ausentes. O carrinho e perfil não serão persistentes.");
+        document.getElementById('loading-overlay').classList.add('hidden');
+        initializeDisplay();
+        return;
+    }
+
+    try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        auth = getAuth(app);
+        
+        // 2. Carregamos os produtos do firestore
+        // Esta é a Promise que estava demorando/travando:
+        loadProducts(); 
+
+        let authPromise;
+        if (initialAuthToken) {
+            authPromise = signInWithCustomToken(auth, initialAuthToken);
+        } else {
+            authPromise = signInAnonymously(auth);
+        }
+
+        await authPromise; // Espera a autenticação
+
+        // 3. Configura o listener de autenticação
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // Configura o ID do usuário autenticado
+                userId = user.uid;
+                isAuthReady = true;
+            } else {
+                // Configura o ID para fallback anônimo
+                userId = crypto.randomUUID();
+                isAuthReady = true;
             }
+            
+            // 4. Inicializa o display APÓS a autenticação
+            initializeDisplay();
+        });
 
-            try {
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-                
-                // Primeiro, carregamos os produtos do Firestore
-                loadProducts();
+    } catch (error) {
+        console.error("Erro fatal na inicialização do Firebase:", error);
+        showMessage("Erro ao conectar com a loja. Tente recarregar a página.", 'error');
+        // Se houver erro, garantimos que o overlay suma
+        document.getElementById('loading-overlay').classList.add('hidden');
+    }
+}
 
-                let authPromise;
-                if (initialAuthToken) {
-                    authPromise = signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    authPromise = signInAnonymously(auth);
-                }
+// O PROMISE.RACE É A SOLUÇÃO FINAL:
+// Ele executa a inicialização do Firebase E um timer de 3 segundos.
+// Quem terminar primeiro ganha, garantindo que o carregamento não seja eterno.
+
+const timeout = new Promise(resolve => setTimeout(() => {
+    forceDisplay();
+    resolve('timeout');
+}, 3000)); // 3 segundos de timeout
+
+Promise.race([initializeAppAndAuth(), timeout]).catch(error => {
+    console.error("Erro durante a corrida de inicialização:", error);
+    forceDisplay();
+});
+
+// REMOVIDA: A chamada initializeAppAndAuth() original
 
                 await authPromise; 
 
