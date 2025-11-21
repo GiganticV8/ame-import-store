@@ -1127,25 +1127,40 @@ const initialAuthToken = null; // Não necessário para hospedagem normal
         };
 
 
-        // --- Inicialização do Firebase e Autenticação ---
+// --- Inicialização do Firebase e Autenticação ---
 
 // Função auxiliar para forçar o display após um timeout
 function forceDisplay() {
     console.warn("TIMEOUT: Firebase demorou para conectar. Exibindo UI agora.");
-    document.getElementById('loading-overlay').classList.add('hidden');
-    // Chama display mesmo que o isAuthReady ainda seja falso.
-    initializeDisplay(); 
+    if (!isAuthReady) {
+        // Se a autenticação ainda não terminou, forçamos o display da UI
+        userId = crypto.randomUUID(); // Fallback para ID anônimo
+        initializeUI();
+    }
 }
 
-// --- Inicialização do Firebase e Autenticação (REVISADO COM TIMEOUT) ---
-async function initializeAppAndAuth() {
-    setLogLevel('debug'); // Use 'debug' para ver logs no console
+// --- Funções de Inicialização de UI ---
+function initializeUI() {
+    // 1. Esconde o overlay de carregamento
+    document.getElementById('loading-overlay').classList.add('hidden');
     
-    // 1. Verificar configuração
+    // 2. Define o display do ID do usuário (parcial)
+    const displayId = `ID: ${userId.substring(0, 8)}...`;
+    document.getElementById('user-id-display')?.textContent = displayId;
+    document.getElementById('user-id-display-mobile')?.textContent = displayId;
+    
+    // 3. Define a HOME como a tela inicial
+    setCategory('Home');
+}
+
+// --- Inicialização do Firebase e Autenticação (VERSÃO FINAL E À PROVA DE FALHAS) ---
+async function initializeAppAndAuth() {
+    setLogLevel('debug');
+    
     if (!firebaseConfig) {
-        console.error("Erro de configuração", "As configurações do Firebase estão ausentes. O carrinho e perfil não serão persistentes.");
+        console.error("Erro de configuração", "As configurações do Firebase estão ausentes.");
         document.getElementById('loading-overlay').classList.add('hidden');
-        initializeDisplay();
+        initializeUI();
         return;
     }
 
@@ -1154,47 +1169,43 @@ async function initializeAppAndAuth() {
         db = getFirestore(app);
         auth = getAuth(app);
         
-        // 2. Carregamos os produtos do firestore
-        // Esta é a Promise que estava demorando/travando:
-        loadProducts(); 
-
-        let authPromise;
-        if (initialAuthToken) {
-            authPromise = signInWithCustomToken(auth, initialAuthToken);
-        } else {
-            authPromise = signInAnonymously(auth);
-        }
-
-        await authPromise; // Espera a autenticação
-
-        // 3. Configura o listener de autenticação
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // Configura o ID do usuário autenticado
-                userId = user.uid;
-                isAuthReady = true;
-            } else {
-                // Configura o ID para fallback anônimo
-                userId = crypto.randomUUID();
-                isAuthReady = true;
-            }
+        // Listener principal de autenticação (só roda UMA VEZ no estado inicial)
+        const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+            if (isAuthReady) return; // Se já foi inicializado, ignore
             
-            // 4. Inicializa o display APÓS a autenticação
-            initializeDisplay();
+            if (user) {
+                userId = user.uid;
+            } else {
+                // Tenta autenticação anônima se não estiver logado
+                await signInAnonymously(auth);
+                // O onAuthStateChanged rodará novamente com o usuário anônimo
+                return;
+            }
+
+            // A partir daqui, temos um userId válido (anônimo ou real)
+            isAuthReady = true;
+
+            // 1. Carrega os produtos (o que era o principal ponto de travamento)
+            loadProducts(); 
+            
+            // 2. Carrega os dados de usuário (carrinho, perfil)
+            loadCart(); 
+            loadUserProfile();
+
+            // 3. Inicializa a UI (Remove o overlay e mostra a loja)
+            initializeUI();
+            
+            unsubscribeAuth(); // Remove o listener após a inicialização
         });
 
     } catch (error) {
         console.error("Erro fatal na inicialização do Firebase:", error);
         showMessage("Erro ao conectar com a loja. Tente recarregar a página.", 'error');
-        // Se houver erro, garantimos que o overlay suma
         document.getElementById('loading-overlay').classList.add('hidden');
     }
 }
 
-// O PROMISE.RACE É A SOLUÇÃO FINAL:
-// Ele executa a inicialização do Firebase E um timer de 3 segundos.
-// Quem terminar primeiro ganha, garantindo que o carregamento não seja eterno.
-
+// O PROMISE.RACE É A SOLUÇÃO FINAL: Ele executa o Firebase E o timer.
 const timeout = new Promise(resolve => setTimeout(() => {
     forceDisplay();
     resolve('timeout');
@@ -1204,47 +1215,6 @@ Promise.race([initializeAppAndAuth(), timeout]).catch(error => {
     console.error("Erro durante a corrida de inicialização:", error);
     forceDisplay();
 });
-
-// REMOVIDA: A chamada initializeAppAndAuth() original
-
-                await authPromise; 
-
-                onAuthStateChanged(auth, (user) => {
-                    let displayId;
-                    if (user) {
-                        userId = user.uid;
-                        isAuthReady = true;
-                        displayId = `ID: ${userId.substring(0, 8)}...`;
-                    } else {
-                        // Isso é um fallback caso a autenticação falhe ou seja anônima
-                        userId = crypto.randomUUID(); 
-                        isAuthReady = false;
-                        displayId = `ID Anônimo: ${userId.substring(0, 8)}...`;
-                    }
-                    
-                    // CORREÇÃO: Verifica se os elementos existem antes de acessar textContent
-                    document.getElementById('user-id-display')?.textContent = displayId;
-                    document.getElementById('user-id-display-mobile')?.textContent = displayId;
-                    
-                    if (isAuthReady) {
-                        loadCart(); 
-                        loadUserProfile(); 
-                    }
-
-                    document.getElementById('loading-overlay').classList.add('hidden');
-                });
-
-            } catch (error) {
-                console.error("Erro fatal na inicialização do Firebase:", error);
-                showMessage("Erro Fatal", "Ocorreu um erro ao conectar ao serviço. Verifique o console.");
-                document.getElementById('loading-overlay').classList.add('hidden');
-            }
-        }
-
-        // --- Inicialização da Aplicação ---
-        
-        initializeAppAndAuth();
-        setCategory('Home');
     </script>
 </body>
 </html>
